@@ -16,6 +16,7 @@ use App\Models\License;
 use App\Models\Accessory;
 use App\Models\Consumable;
 use App\Models\Component;
+use Laravel\Dusk\DuskServiceProvider;
 
 
 /**
@@ -95,6 +96,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $monolog = Log::getMonolog();
         $log_level = config('app.log_level');
+
+        if ($this->app->environment('local', 'develop', 'testing')) {
+            $this->app->register(DuskServiceProvider::class);
+        }
 
         if (($this->app->environment('production'))  && (config('services.rollbar.access_token'))){
             $this->app->register(\Jenssegers\Rollbar\RollbarServiceProvider::class);
