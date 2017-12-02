@@ -406,5 +406,96 @@ class ComponentsController extends Controller
         return redirect()->route('components.index')->with('error', trans('admin/components/message.not_found'));
     }
 
+    /**
+     * Show a form to convert a component to an asset
+     *
+     * @author [A. Bergamasco] [<info@vjandrea.net>]
+     * @since [v4.1.6]
+     * @param Request $request
+     * @param int $componentId
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function convert(Request $request, $componentId)
+    {
+        $component = Component::find($componentId);
+
+        // category conversion
+        // check if an asset category exists with the same name
+        $category = \App\Models\Category::where('name', $component->category->name)
+            ->where('category_type', 'asset')
+            ->where('user_id', $component->category->user_id)
+            ->first();
+
+        if(!$category) {
+            $category = \App\Models\Category::create([
+                'name' => $component->category->name . ' (Asset)',
+                'category_type' => 'asset',
+                'user_id' => $component->category->user_id,
+            ]);
+            $category->save();
+        }
+
+        dd($category);
+
+        // asset model creation
+        $model = new \App\Models\AssetModel();
+        $model->name = $component->name;
+        $model->category_id = $category->id;
+        $model->save();
+
+        // temporary asset to hold the component attributes
+        $item = new Asset();
+        $item->name = $component->name;
+        $item->location_id = $component->location_id;
+        $item->user_id = $component->user_id;
+        $item->purchase_date = $component->purchase_date;
+        $item->serial = $component->serial;
+        $item->purchase_cost = $component->purchase_cost;
+        $item->company_id = $component->company_id;
+
+        return view('components.convert', compact('item'))
+            ->with('model_list', Helper::modelList())
+            ->with('statuslabel_list', Helper::statusLabelList())
+            ->with('statuslabel_types', Helper::statusTypeList());
+    }
 
 }
+
+/*
+#attributes: array:16 [▼
+  "id" => "1"
+  "name" => "Crucial 4GB DDR3L-1600 SODIMM"
+  "category_id" => "13"
+  "location_id" => "1"
+  "company_id" => "5"
+  "user_id" => null
+  "purchase_date" => "1994-12-17 03:10:35"
+  "created_at" => "2017-12-01 19:45:59"
+  "updated_at" => "2017-12-01 19:45:59"
+  "deleted_at" => null
+  "min_amt" => "2"
+  "order_number" => "16750227"
+  "qty" => "10"
+  "serial" => "cbb2e6c8-6487-3fab-a192-6e0c46753aeb"
+  "purchase_cost" => "176.3"
+  "image" => null
+]
+#original: array:16 [▼
+  "id" => "1"
+  "name" => "Crucial 4GB DDR3L-1600 SODIMM"
+  "category_id" => "13"
+  "location_id" => "1"
+  "company_id" => "5"
+  "user_id" => null
+  "purchase_date" => "1994-12-17 03:10:35"
+  "created_at" => "2017-12-01 19:45:59"
+  "updated_at" => "2017-12-01 19:45:59"
+  "deleted_at" => null
+  "min_amt" => "2"
+  "order_number" => "16750227"
+  "qty" => "10"
+  "serial" => "cbb2e6c8-6487-3fab-a192-6e0c46753aeb"
+  "purchase_cost" => "176.3"
+  "image" => null
+]
+}*/
