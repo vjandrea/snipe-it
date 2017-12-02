@@ -22,6 +22,11 @@ Route::group([ 'prefix' => 'components','middleware' => ['auth'] ], function () 
     Route::post('bulk', [ 'as' => 'component/bulk-form', 'uses' => 'ComponentsController@postBulk' ]);
     Route::post('bulksave', [ 'as' => 'component/bulk-save', 'uses' => 'ComponentsController@postBulkSave' ]);
 
+    Route::get(
+        '{componentID}/convert',
+        [ 'as' => 'convert/component', 'uses' => 'ComponentsController@convert' ]
+    );
+
 });
 
 Route::resource('components', 'ComponentsController', [
