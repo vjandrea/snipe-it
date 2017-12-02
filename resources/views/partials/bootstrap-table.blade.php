@@ -229,7 +229,14 @@
                 actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '/restore" class="btn btn-sm btn-warning" data-tooltip="true" title="Restore"><i class="fa fa-retweet"></i></a>&nbsp;';
             }
 
+            if (destination == 'components') {
+                actions += '<a href="{{ url('/') }}/' + dest + '/' + row.id + '/convert" class="btn btn-sm btn-success" data-tooltip="true" title="Convert to asset"><i class="fa fa-info"></i></a>&nbsp;';
+            } else {
+                actions += '<!-- destination: ' + destination + '-->';
+            }
+
             actions +='</nobr>';
+
             return actions;
 
         };
@@ -310,7 +317,7 @@
                     return '<nobr><a href="{{ url('/') }}/' + destination + '/' + row.assigned_pivot_id + '/checkin" class="btn btn-sm bg-purple" data-tooltip="true" title="Check this item in so it is available for re-imaging, re-issue, etc.">{{ trans('general.checkin') }}</a>';
                 }
 
-            } 
+            }
 
         }
 
@@ -487,7 +494,7 @@
         }, 0);
         return total_sum.toFixed(2);
     }
-    
+
 
     $(function () {
         $('#bulkEdit').click(function () {
