@@ -473,7 +473,7 @@ class ReportsController extends Controller
                 $header[] = trans('admin/hardware/table.purchase_date');
             }
 
-            if ($request->has('purchase_cost')) {
+            if (($request->has('purchase_cost'))  || ($request->has('depreciation'))) {
                 $header[] = trans('admin/hardware/table.purchase_cost');
             }
 
@@ -515,7 +515,6 @@ class ReportsController extends Controller
                 $header[] = 'Warranty Expires';
             }
             if ($request->has('depreciation')) {
-                $header[] = 'Purchase Cost';
                 $header[] = 'Value';
                 $header[] = 'Diff';
             }
@@ -534,6 +533,14 @@ class ReportsController extends Controller
 
             if ($request->has('updated_at')) {
                 $header[] = trans('general.updated_at');
+            }
+
+            if ($request->has('last_audit_date')) {
+                $header[] = trans('general.last_audit');
+            }
+
+            if ($request->has('next_audit_date')) {
+                $header[] = trans('general.next_audit_date');
             }
 
             if ($request->has('notes')) {
@@ -637,7 +644,7 @@ class ReportsController extends Controller
                     }
 
                     if ($request->has('eol')) {
-                        $row[] = ($asset->eol) ? $asset->present()->eol_date() : '';
+                        $row[] = ($asset->purchase_date!='') ? $asset->present()->eol_date() : '';
                     }
 
                     if ($request->has('order')) {
@@ -645,7 +652,7 @@ class ReportsController extends Controller
                     }
 
                     if ($request->has('supplier')) {
-                        $row[] = ($asset->location) ? $asset->supplier->name : '';
+                        $row[] = ($asset->supplier) ? $asset->supplier->name : '';
                     }
                     
 
@@ -686,9 +693,6 @@ class ReportsController extends Controller
                         $row[] = $asset->present()->warrantee_expires();
                     }
 
-                    if ($request->has('purchase_cost')) {
-                        $row[]  = ($asset->purchase_cost!='') ? Helper::formatCurrencyOutput($asset->purchase_cost) : '';
-                    }
 
                     if ($request->has('depreciation')) {
                             $depreciation = $asset->getDepreciatedValue();
@@ -711,6 +715,14 @@ class ReportsController extends Controller
 
                     if ($request->has('updated_at')) {
                         $row[] = ($asset->updated_at) ? $asset->updated_at : '';
+                    }
+
+                    if ($request->has('last_audit_date')) {
+                        $row[] = ($asset->last_audit_date) ? $asset->last_audit_date : '';
+                    }
+
+                    if ($request->has('next_audit_date')) {
+                        $row[] = ($asset->next_audit_date) ? $asset->next_audit_date : '';
                     }
 
                     if ($request->has('notes')) {
