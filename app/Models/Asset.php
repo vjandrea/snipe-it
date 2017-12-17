@@ -49,7 +49,9 @@ class Asset extends Depreciable
         'deleted_at',
         'purchase_date',
         'last_checkout',
-        'expected_checkin'
+        'expected_checkin',
+        'last_audit_date',
+        'next_audit_date'
     ];
 
 
@@ -68,6 +70,7 @@ class Asset extends Depreciable
         'status'          => 'integer',
         'purchase_cost'   => 'numeric|nullable',
         'next_audit_date'  => 'date|nullable',
+        'last_audit_date'  => 'date|nullable',
     ];
 
   /**
@@ -128,7 +131,11 @@ class Asset extends Depreciable
 
     public function availableForCheckout()
     {
-        if ((empty($this->assigned_to)) && (empty($this->deleted_at)) && ($this->assetstatus->deployable == 1)) {
+        if (
+            (empty($this->assigned_to)) &&
+            (empty($this->deleted_at)) &&
+            (($this->assetstatus) && ($this->assetstatus->deployable == 1)))
+        {
             return true;
         }
         return false;
@@ -257,13 +264,10 @@ class Asset extends Depreciable
   /**
    * Get the asset's location based on the assigned user
    **/
-    public function assetLoc()
+    public function assetLoc($iterations = 1,$first_asset = null)
     {
-        static $iterations=0;
-        static $first_asset;
         if (!empty($this->assignedType())) {
             if ($this->assignedType() == self::ASSET) {
-                $iterations++;
                 if(!$first_asset) {
                     $first_asset=$this;
                 }
@@ -272,7 +276,7 @@ class Asset extends Depreciable
                 }
                 $assigned_to=Asset::find($this->assigned_to); //have to do this this way because otherwise it errors
                 if ($assigned_to) {
-                    return $assigned_to->assetLoc();
+                    return $assigned_to->assetLoc($iterations + 1, $first_asset);
                 } // Recurse until we have a final location
             }
             if ($this->assignedType() == self::LOCATION) {
@@ -765,7 +769,7 @@ class Asset extends Depreciable
     {
         $search = explode(' OR ', $search);
 
-        return $query->leftJoin('users as assets_users',function ($leftJoin) {
+         return $query->leftJoin('users as assets_users',function ($leftJoin) {
             $leftJoin->on("assets_users.id", "=", "assets.assigned_to")
                 ->where("assets.assigned_type", "=", User::class);
         })->leftJoin('locations as assets_locations',function ($leftJoin) {
@@ -801,7 +805,7 @@ class Asset extends Depreciable
                     });
                 })->orWhere(function ($query) use ($search) {
                     $query->whereHas('company', function ($query) use ($search) {
-                        $query->where('companies.name', 'LIKE', '%'.$search.'%');
+                        $query->where('companies.name', 'LIKE', '%' . $search . '%');
                     });
                 })->orWhere(function ($query) use ($search) {
                     $query->whereHas('defaultLoc', function ($query) use ($search) {
@@ -810,6 +814,7 @@ class Asset extends Depreciable
                  })->orWhere(function ($query) use ($search) {
                          $query->where('assets_users.first_name', 'LIKE', '%'.$search.'%')
                          ->orWhere('assets_users.last_name', 'LIKE', '%'.$search.'%')
+                         ->orWhereRaw('CONCAT(assets_users.first_name," ",assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
                          ->orWhere('assets_users.username', 'LIKE', '%'.$search.'%')
                          ->orWhere('assets_locations.name', 'LIKE', '%'.$search.'%')
                          ->orWhere('assigned_assets.name', 'LIKE', '%'.$search.'%');
@@ -817,6 +822,8 @@ class Asset extends Depreciable
                     ->orWhere('assets.asset_tag', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.serial', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.order_number', 'LIKE', '%'.$search.'%')
+                    ->orWhere('assets.purchase_date', 'LIKE', '%'.$search.'%')
+                    ->orWhere('assets.purchase_cost', 'LIKE', '%'.$search.'%')
                     ->orWhere('assets.notes', 'LIKE', '%'.$search.'%');
             }
             foreach (CustomField::all() as $field) {
@@ -866,6 +873,7 @@ class Asset extends Depreciable
                 })->orWhere(function ($query) use ($search) {
                     $query->where('assets_users.first_name', 'LIKE', '%'.$search.'%')
                         ->orWhere('assets_users.last_name', 'LIKE', '%'.$search.'%')
+                        ->orWhereRaw('CONCAT(assets_users.first_name," ",assets_users.last_name) LIKE ?', ["%$search%", "%$search%"])
                         ->orWhere('assets_users.username', 'LIKE', '%'.$search.'%')
                         ->orWhere('assets_locations.name', 'LIKE', '%'.$search.'%')
                         ->orWhere('assigned_assets.name', 'LIKE', '%'.$search.'%');
@@ -997,7 +1005,7 @@ class Asset extends Depreciable
             }
 
             if (($fieldname!='category')  && ($fieldname!='location')
-                && ($fieldname!='status_label') && ($fieldname!='model') && ($fieldname!='manufacturer')) {
+                && ($fieldname!='status_label') && ($fieldname!='model') && ($fieldname!='company') && ($fieldname!='manufacturer')) {
                     $query->orWhere('assets.'.$fieldname, 'LIKE', '%' . $search_val . '%');
             }
 
